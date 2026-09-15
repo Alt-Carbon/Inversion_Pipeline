@@ -1,0 +1,7 @@
+{
+  "decimate_stride": null,
+  "core_cell_m": 650.0,
+  "core_cell_z_m": 325.0,
+  "depth_core_m": 3000.0,
+  "pad_distance_m": 20000.0
+}

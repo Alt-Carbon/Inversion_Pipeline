@@ -1,0 +1,353 @@
+<title>__TITLE__</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/3.5.1/plotly.min.js"></script>
+<style>
+  :root{
+    --bg:#0e131a; --panel:#161d27; --panel-2:#1c2530; --border:#2a3644;
+    --border-soft:#212b37; --text:#e7ecf2; --text-muted:#8b97a6; --text-faint:#57677a;
+    --accent:#d98e4a; --accent-soft:#4a3a28; --pos:#c0483d; --neg:#3d6fc0; --focus:#d98e4a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:"IBM Plex Sans",system-ui,sans-serif;
+      height:100vh; overflow:hidden; display:flex; flex-direction:column;}
+  .mono{font-family:"IBM Plex Mono","SFMono-Regular",monospace;}
+  header{display:flex; align-items:center; gap:20px; padding:12px 18px; border-bottom:1px solid var(--border);
+        background:var(--panel); flex:none;}
+  .brand .name{font-family:"IBM Plex Mono"; font-weight:600; font-size:14.5px;}
+  .brand .sub{font-size:11px; color:var(--text-muted);}
+  .header-stats{display:flex; gap:22px; margin-left:auto; font-family:"IBM Plex Mono"; font-size:11px; color:var(--text-muted);}
+  .header-stats .stat{display:flex; flex-direction:column; gap:2px; align-items:flex-end;}
+  .header-stats .stat b{color:var(--text); font-size:12.5px; font-weight:500;}
+  .stage{position:relative; flex:1; min-height:0; display:flex;}
+  #plot{flex:1; min-width:0;}
+  aside{width:260px; flex:none; background:var(--panel); border-left:1px solid var(--border);
+       padding:18px 16px 16px; display:flex; flex-direction:column; gap:18px; overflow-y:auto;}
+  .rail-group{display:flex; flex-direction:column; gap:9px;}
+  .rail-label{font-family:"IBM Plex Mono"; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+             color:var(--text-faint); display:flex; justify-content:space-between; align-items:baseline;}
+  .rail-label .val{color:var(--accent); font-size:11.5px;}
+  input[type="range"]{-webkit-appearance:none; width:100%; height:3px; border-radius:2px; background:var(--border);
+                     outline:none; margin:6px 0 2px;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none; width:13px; height:13px; border-radius:50%;
+                                           background:var(--accent); border:2px solid var(--panel);
+                                           box-shadow:0 0 0 1px var(--accent); cursor:pointer; margin-top:-5px;}
+  input[type="range"]::-moz-range-thumb{width:13px; height:13px; border-radius:50%; background:var(--accent);
+                                       border:2px solid var(--panel); box-shadow:0 0 0 1px var(--accent); cursor:pointer;}
+  input[type="checkbox"]{accent-color:var(--accent);}
+  /* Dual-handle band slider: two native range inputs stacked on one
+     track, each with its own track made invisible/click-through so only
+     its thumb is grabbable -- a visible fill div between the two
+     current values stands in for a real dual-track control, which no
+     native HTML element provides. */
+  .dual-range{position:relative; height:20px; margin:6px 0 2px;}
+  .dual-range-track{position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+                    height:3px; border-radius:2px; background:var(--border);}
+  .dual-range-fill{position:absolute; top:50%; transform:translateY(-50%); height:3px; border-radius:2px;
+                   background:var(--accent);}
+  .dual-range input[type="range"]{position:absolute; left:0; right:0; top:0; width:100%; margin:0;
+                                  background:none; pointer-events:none;}
+  .dual-range input[type="range"]::-webkit-slider-runnable-track{background:transparent;}
+  .dual-range input[type="range"]::-moz-range-track{background:transparent;}
+  .dual-range input[type="range"]::-webkit-slider-thumb{pointer-events:auto;}
+  .dual-range input[type="range"]::-moz-range-thumb{pointer-events:auto;}
+  .check-row{display:flex; align-items:center; gap:7px; font-family:"IBM Plex Mono"; font-size:11px; color:var(--text-muted);}
+  .btn{font-family:"IBM Plex Mono"; font-size:11.5px; font-weight:500; color:var(--text); background:var(--panel-2);
+      border:1px solid var(--border); border-radius:6px; padding:8px 10px; cursor:pointer; text-align:left;}
+  .btn:hover{border-color:var(--accent); color:var(--accent);}
+  .divider{height:1px; background:var(--border-soft); margin:2px 0;}
+  .meta{display:flex; flex-direction:column; gap:7px;}
+  .meta-row{display:flex; justify-content:space-between; gap:10px; font-size:11.5px;}
+  .meta-row .k{color:var(--text-faint); font-family:"IBM Plex Mono";}
+  .meta-row .v{color:var(--text-muted); font-family:"IBM Plex Mono"; text-align:right;}
+  .cbar{height:10px; border-radius:3px; background:linear-gradient(90deg,#274c8a,#3d6fc0,#5c96e8,#1c2530,#e8836f,#c0483d,#7a3630);}
+  .cbar-ticks{display:flex; justify-content:space-between; font-family:"IBM Plex Mono"; font-size:9.5px; color:var(--text-faint); margin-top:3px;}
+  .note{font-size:11px; line-height:1.55; color:var(--text-faint);}
+  .note b{color:var(--text-muted); font-weight:500;}
+  .hint{position:absolute; left:16px; bottom:14px; font-family:"IBM Plex Mono"; font-size:10.5px; color:var(--text-faint);
+       background:rgba(22,29,39,.82); border:1px solid var(--border-soft); padding:6px 10px; border-radius:6px; pointer-events:none;}
+</style>
+<header>
+  <div class="brand">
+    <div class="name">__BRAND_NAME__</div>
+    <div class="sub">__BRAND_SUB__</div>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><span>chi base / improved</span><b id="stat-chi">--</b></div>
+  </div>
+</header>
+<div class="stage">
+  <div id="plot"></div>
+  <div class="hint">drag to orbit &middot; scroll to zoom &middot; "drag to pan" toggle at right for panning</div>
+  <aside>
+    <div class="rail-group">
+      <div class="rail-label">Colour range shown (% of &plusmn;max) <span class="val" id="band-val">45 to 100%</span></div>
+      <div class="dual-range">
+        <div class="dual-range-track"></div>
+        <div class="dual-range-fill" id="band-fill"></div>
+        <input type="range" id="band-lo" min="-100" max="100" value="45" step="1">
+        <input type="range" id="band-hi" min="-100" max="100" value="100" step="1">
+      </div>
+    </div>
+    <div class="rail-group">
+      <div class="rail-label">Shell opacity <span class="val" id="op-val">0.55</span></div>
+      <input type="range" id="opacity" min="15" max="90" value="55" step="1">
+    </div>
+    <div class="rail-group">
+      <div class="rail-label">Depth range shown <span class="val" id="vexag-val">--</span></div>
+      <input type="range" id="vexag" min="10" max="40" value="16" step="1">
+    </div>
+    <div class="divider"></div>
+    <div class="rail-group">
+      <div class="check-row"><input type="checkbox" id="chk-pan"><label for="chk-pan">drag to pan (instead of orbit)</label></div>
+    </div>
+    <div class="divider"></div>
+    <div class="rail-group">
+      <div class="check-row"><input type="checkbox" id="chk-topo" checked><label for="chk-topo">show topography</label></div>
+      <div class="check-row"><input type="checkbox" id="chk-boundary" checked><label for="chk-boundary">show study area outline</label></div>
+      <div class="check-row"><input type="checkbox" id="chk-base" checked><label for="chk-base">show baseline model</label></div>
+      <div class="check-row"><input type="checkbox" id="chk-improved"><label for="chk-improved">show improved model</label></div>
+    </div>
+    <div class="rail-group" id="legend-base">
+      <div class="rail-label">Baseline susceptibility (SI)</div>
+      <div class="cbar" style="background:linear-gradient(90deg,#274c8a,#3d6fc0,#5c96e8,#1c2530,#e8836f,#c0483d,#7a3630);"></div>
+      <div class="cbar-ticks"><span id="cbar-lo-base">--</span><span>0</span><span id="cbar-hi-base">--</span></div>
+    </div>
+    <div class="rail-group" id="legend-improved">
+      <div class="rail-label">Improved susceptibility (SI)</div>
+      <div class="cbar" style="background:linear-gradient(90deg,#1f6b63,#2f9c8f,#4fc4b5,#1c2530,#e8c04f,#c9962e,#8a6418);"></div>
+      <div class="cbar-ticks"><span id="cbar-lo-improved">--</span><span>0</span><span id="cbar-hi-improved">--</span></div>
+    </div>
+    <div class="divider"></div>
+    <button class="btn" id="reset-cam">&#8635;&nbsp;&nbsp;RESET VIEW</button>
+    <div class="divider"></div>
+    <div class="meta">
+      <div class="meta-row"><span class="k">active cells base</span><span class="v" id="stat-ncells-base">--</span></div>
+      <div class="meta-row"><span class="k">active cells improved</span><span class="v" id="stat-ncells-improved">--</span></div>
+      <div class="meta-row"><span class="k">method base</span><span class="v">smooth L2, depth weighting</span></div>
+      <div class="meta-row"><span class="k">method improved</span><span class="v">sparse IRLS, real sensitivity weighting</span></div>
+    </div>
+    <div class="note">__NOTE_HTML__</div>
+  </aside>
+</div>
+<script>
+const DATA = __VOLUME_DATA_JSON__;
+
+let bandLo = 0.45, bandHi = 1.0, opacityVal = 0.55, vexag = 1.6;
+
+const MODEL_PALETTES = {
+  baseline: {pos: [[0,"#7a3630"],[0.5,"#c0483d"],[1,"#e8836f"]],
+            neg: [[0,"#5c96e8"],[0.5,"#3d6fc0"],[1,"#274c8a"]]},
+  improved: {pos: [[0,"#8a6418"],[0.5,"#c9962e"],[1,"#e8c04f"]],
+            neg: [[0,"#1f6b63"],[0.5,"#2f9c8f"],[1,"#4fc4b5"]]},
+};
+
+function layerTraces(key, checkboxId){
+  // bandLo/bandHi are signed fractions of this layer's own lim (-1..+1,
+  // i.e. the slider spans -max to +max, not a magnitude-only band) -- so
+  // the selected interval can sit entirely in positive territory (e.g.
+  // 0 to max), entirely negative (min to 0), straddle zero, or be a
+  // narrow window anywhere in between. Built as up to two isosurface
+  // traces (one per polarity actually covered by the selection), not a
+  // single trace, so positive/negative keep their own warm/cool
+  // colourscale exactly where each one applies.
+  if (!document.getElementById(checkboxId).checked) return [];
+  const g = DATA[key];
+  const lim = g.lim;
+  const loVal = lim * bandLo, hiVal = lim * bandHi;
+  const pal = MODEL_PALETTES[key];
+  const common = {
+    type: "isosurface", x: g.x_flat, y: g.y_flat, z: g.z_flat, value: g.values,
+    opacity: opacityVal, caps: {x:{show:false}, y:{show:false}, z:{show:false}},
+    showscale: false, lighting: {ambient:0.55, diffuse:0.7, specular:0.15, roughness:0.9},
+  };
+  const traces = [];
+  const posLo = Math.max(loVal, 0);
+  if (hiVal > posLo) {
+    traces.push(Object.assign({}, common, {
+      isomin: posLo, isomax: hiVal, surface: {count: 10, fill: 0.92}, colorscale: pal.pos,
+    }));
+  }
+  const negHi = Math.min(hiVal, 0);
+  if (negHi > loVal) {
+    traces.push(Object.assign({}, common, {
+      isomin: loVal, isomax: negHi, surface: {count: 10, fill: 0.92}, colorscale: pal.neg,
+    }));
+  }
+  return traces;
+}
+
+const LABEL_COLOR = "#e8c04f";
+
+function labelTraces(){
+  // Numbered markers at each body's RECOVERED peak, from the improved
+  // result only (see build_viewer.py's module docstring for why: one
+  // shared position per body so the label doesn't jump when you switch
+  // layers -- position still comes from actual inversion output, not a
+  // digitised guess at ground truth). Shown whenever either model layer
+  // is on.
+  const baseOn = document.getElementById("chk-base").checked;
+  const imprOn = document.getElementById("chk-improved").checked;
+  if (!baseOn && !imprOn) return [];
+  const labels = DATA.labels;
+  if (!labels || !labels.length) return [];
+  return [{
+    type: "scatter3d", mode: "markers+text",
+    x: labels.map(l => l.x), y: labels.map(l => l.y), z: labels.map(l => l.z),
+    marker: {size: 4, color: LABEL_COLOR, line: {color: "#0e131a", width: 1}},
+    text: labels.map(l => "#" + l.id), textposition: "top center",
+    textfont: {family: "IBM Plex Mono", size: 12, color: LABEL_COLOR},
+    hovertext: labels.map(l => `Body ${l.id} (${l.shape})<br>true χ = ${l.true_susceptibility_si} SI` +
+                          `<br>recovered peak (improved) = ${l.recovered_value.toFixed(4)} SI at this point`),
+    hoverinfo: "text",
+  }];
+}
+
+function topoTraces(){
+  const t = DATA.topo;
+  if (!t || !document.getElementById("chk-topo").checked) return [];
+  return [{
+    type: "surface", x: t.x, y: t.y, z: t.z,
+    colorscale: [[0,"#8a7355"],[0.5,"#a68a63"],[1,"#c4a877"]],
+    showscale: false, opacity: 0.55,
+    contours: {z: {show: false}},
+    lighting: {ambient:0.65, diffuse:0.55, specular:0.05, roughness:0.95},
+    hoverinfo: "skip",
+  }];
+}
+
+function boundaryTraces(){
+  // Real survey-footprint outline (src/coverage.py), drawn at a fixed
+  // z=0 reference (not draped onto local topography -- the outline
+  // itself is a horizontal shape, and draping it would need interpolating
+  // topo height at each vertex for no real gain in what it communicates).
+  if (!document.getElementById("chk-boundary").checked) return [];
+  return (DATA.boundary || []).map(loop => ({
+    type: "scatter3d", mode: "lines",
+    x: loop.x, y: loop.y, z: loop.x.map(() => 0),
+    line: {color: "#e7ecf2", width: 3},
+    hoverinfo: "skip",
+  }));
+}
+
+function axisStyle(title){
+  return {title:{text:title, font:{family:"IBM Plex Mono", size:11, color:"#8b97a6"}}, color:"#57677a",
+        gridcolor:"#212b37", zerolinecolor:"#2a3644", showbackground:true, backgroundcolor:"#11161e",
+        tickfont:{family:"IBM Plex Mono", size:9, color:"#57677a"}};
+}
+
+function sceneAspect(){
+  // Box shape follows real x/y/z spans (true to scale) UNLESS that would
+  // render near-flat: a survey many times wider than it is deep (an AOI
+  // property, not something this pipeline chose -- e.g. a ~55 km-wide,
+  // ~3 km-deep raster survey) gives a true z-proportion of ~0.05, a
+  // pancake at the default camera angle. MIN_Z_ASPECT floors the z
+  // proportion so depth stays readable -- a deliberate visual
+  // exaggeration (not a "true to scale" claim, same principle as the
+  // vertical-exaggeration slider already offers, just applied to the box
+  // shape itself). Computed from the actual data every time, not a
+  // per-dataset special case, so it self-adjusts for any survey shape.
+  const g = DATA.baseline;   // both layers share the same grid geometry
+  const xSpan = g.x[g.x.length-1]-g.x[0], ySpan = g.y[g.y.length-1]-g.y[0], zSpan = g.z[g.z.length-1]-g.z[0];
+  const m = Math.max(xSpan, ySpan);
+  const MIN_Z_ASPECT = 0.35;
+  return {x:xSpan/m, y:ySpan/m, z:Math.max(zSpan/m, MIN_Z_ASPECT)};
+}
+function zAxisRange(){
+  const g = DATA.baseline;
+  const z0 = g.z[0], z1 = g.z[g.z.length-1];
+  const shown = (z1-z0)*vexag;
+  return [z1-shown, z1];
+}
+
+const layout = {
+  paper_bgcolor:"#0e131a", plot_bgcolor:"#0e131a", margin:{l:0,r:0,t:0,b:0},
+  scene:{xaxis:axisStyle("EASTING (m)"), yaxis:axisStyle("NORTHING (m)"), zaxis:axisStyle("ELEVATION (m, local datum)"),
+        aspectmode:"manual", camera:{eye:{x:1.55,y:-1.55,z:0.9}}},
+  showlegend:false,
+};
+const config = {displayModeBar:false, responsive:true};
+
+function render(first){
+  const traces = [...topoTraces(), ...boundaryTraces(), ...layerTraces("baseline", "chk-base"),
+                 ...layerTraces("improved", "chk-improved"), ...labelTraces()];
+  layout.scene.aspectratio = sceneAspect();
+  layout.scene.zaxis.range = zAxisRange();
+  if (first) Plotly.newPlot("plot", traces, layout, config);
+  else Plotly.react("plot", traces, layout, config);
+
+  document.getElementById("cbar-lo-base").textContent = "-" + DATA.baseline.lim.toFixed(3);
+  document.getElementById("cbar-hi-base").textContent = "+" + DATA.baseline.lim.toFixed(3);
+  document.getElementById("cbar-lo-improved").textContent = "-" + DATA.improved.lim.toFixed(3);
+  document.getElementById("cbar-hi-improved").textContent = "+" + DATA.improved.lim.toFixed(3);
+  document.getElementById("stat-chi").textContent =
+    DATA.baseline.chi.toFixed(2) + " / " + DATA.improved.chi.toFixed(2);
+  document.getElementById("stat-ncells-base").textContent = DATA.baseline.n_active_cells.toLocaleString();
+  document.getElementById("stat-ncells-improved").textContent = DATA.improved.n_active_cells.toLocaleString();
+  document.getElementById("legend-base").style.opacity = document.getElementById("chk-base").checked ? 1 : 0.35;
+  document.getElementById("legend-improved").style.opacity = document.getElementById("chk-improved").checked ? 1 : 0.35;
+
+  const g = DATA.baseline;
+  const spanKm = (g.z[g.z.length-1]-g.z[0])*vexag/1000;
+  document.getElementById("vexag-val").textContent = spanKm.toFixed(1) + " km";
+}
+
+const bandLoEl = document.getElementById("band-lo"), bandHiEl = document.getElementById("band-hi");
+function updateBandUI(){
+  // Slider values run -100..100 (this layer's -max..+max); fill-bar CSS
+  // needs a 0..100% position, so remap.
+  const loPos = (+bandLoEl.value + 100) / 2, hiPos = (+bandHiEl.value + 100) / 2;
+  document.getElementById("band-fill").style.left = loPos + "%";
+  document.getElementById("band-fill").style.right = (100 - hiPos) + "%";
+  document.getElementById("band-val").textContent = bandLoEl.value + " to " + bandHiEl.value + "%";
+}
+bandLoEl.addEventListener("input", e => {
+  if (+e.target.value > +bandHiEl.value - 1) e.target.value = +bandHiEl.value - 1;   // keep a minimum 1% gap
+  bandLo = (+e.target.value)/100;
+  updateBandUI();
+  render(false);
+});
+bandHiEl.addEventListener("input", e => {
+  if (+e.target.value < +bandLoEl.value + 1) e.target.value = +bandLoEl.value + 1;
+  bandHi = (+e.target.value)/100;
+  updateBandUI();
+  render(false);
+});
+updateBandUI();
+document.getElementById("opacity").addEventListener("input", e => {
+  opacityVal = (+e.target.value)/100;
+  document.getElementById("op-val").textContent = opacityVal.toFixed(2);
+  render(false);
+});
+document.getElementById("vexag").addEventListener("input", e => {
+  vexag = (+e.target.value)/10;
+  render(false);
+});
+document.getElementById("chk-base").addEventListener("change", () => render(false));
+document.getElementById("chk-improved").addEventListener("change", () => render(false));
+document.getElementById("chk-topo").addEventListener("change", () => render(false));
+document.getElementById("chk-boundary").addEventListener("change", () => render(false));
+document.getElementById("reset-cam").addEventListener("click", () => {
+  Plotly.relayout("plot", {"scene.camera": {eye:{x:1.55,y:-1.55,z:0.9}}});
+});
+document.getElementById("chk-pan").addEventListener("change", e => {
+  // Plotly's own gl3d dragmode, not a modifier-key gesture (three.js-
+  // style shift/right-click-drag panning isn't actually wired into
+  // Plotly's own camera controls here, despite the old hint text
+  // claiming shift-drag worked -- confirmed unreliable, replaced with
+  // this toggle instead of a gesture the user has to guess at).
+  Plotly.relayout("plot", {"scene.dragmode": e.target.checked ? "pan" : "orbit"});
+});
+
+if (!DATA.topo) {
+  // No elevation source for this dataset's format (raster/geojson --
+  // see src/load_survey.py) -- hide the toggle entirely rather than
+  // leave a checkbox that does nothing when clicked.
+  document.getElementById("chk-topo").closest(".check-row").style.display = "none";
+}
+render(true);
+window.addEventListener("resize", () => Plotly.Plots.resize("plot"));
+</script>

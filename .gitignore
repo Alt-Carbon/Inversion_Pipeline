@@ -1,0 +1,27 @@
+# Third-party benchmark data (Ogarko et al. 2024, Zenodo 10.5281/zenodo.8397794)
+# -- not ours to redistribute, and multi-hundred-MB text files anyway.
+# See README.md "Getting the data" for the download link.
+/synthetic400/
+/callisto/
+/synthetic400_magnetisation/
+
+# Vendored copy of the Tomofast-x source (github.com/TOMOFAST/Tomofast-x)
+# used only to check Sect. 2.1's topography-draping method and the ADMM
+# positivity-constraint details -- someone else's repo, not ours to ship.
+/Tomofast-x-master/
+/Tomofast-x/
+
+# Regenerable sensitivity-matrix cache (src/kernel_cache.py) -- one file
+# alone is 1+ GB, far past GitHub's 100 MB/file limit. Rebuilds itself
+# (and reports a "miss" the first time) on the next run that needs it.
+results/kernel_cache/
+results/kernel_cache_sweep_demo/
+results/*/kernel_cache*/
+
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+
+# OS/editor cruft
+.DS_Store
+*:Zone.Identifier

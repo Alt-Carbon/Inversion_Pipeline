@@ -1,0 +1,19 @@
+# Tested against these exact versions (this machine, 2026-09) -- SimPEG's
+# API around optimization/regularization/directives has changed between
+# minor versions before, so pin rather than float if reproducing results.
+simpeg==0.25.2
+discretize==0.12.0
+numpy==2.4.6
+scipy==1.18.0
+matplotlib==3.10.8
+
+# For "raster" (GeoTIFF/ERS) and "raster"-adjacent IGRF-14 lookups (see
+# src/load_survey.py) -- not needed if you only ever use "obs" or
+# "geojson" format data, but installed unconditionally since discover.py
+# doesn't know your data's format until it runs.
+rasterio==1.4.3
+ppigrf==2.1.0
+
+# Optional: scripts/upload_to_s3.py shells out to the `aws` CLI (not a
+# Python package) -- install separately if you want that feature:
+# https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
